@@ -1,23 +1,50 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-public class Enemy : MonoBehaviour
+public sealed class Enemy : MonoBehaviour
 {
-    public float dieVelocity = 12.5f;
+    [SerializeField, Min(0f)] private float dieVelocity = 5f;
 
-    // Start is called before the first frame update
-    void Start()
+    private bool isDefeated;
+
+    private void Start()
     {
-        LevelManager.instance.AddEnemyCount();
+        if (LevelManager.HasInstance)
+        {
+            LevelManager.Instance.RegisterEnemy(this);
+        }
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if(collision.relativeVelocity.sqrMagnitude > dieVelocity)
+        if (isDefeated)
         {
-            Destroy(gameObject);
-            LevelManager.instance.EnemyDie();
+            return;
         }
+
+        bool hitByBird = collision.collider.GetComponentInParent<Bird>() != null;
+        bool receivedStrongImpact = collision.relativeVelocity.magnitude >= dieVelocity;
+
+        if (!hitByBird && !receivedStrongImpact)
+        {
+            return;
+        }
+
+        Defeat();
+    }
+
+    internal void Defeat()
+    {
+        if (isDefeated)
+        {
+            return;
+        }
+
+        isDefeated = true;
+        if (LevelManager.HasInstance)
+        {
+            LevelManager.Instance.UnregisterEnemy(this);
+        }
+
+        Destroy(gameObject);
     }
 }
